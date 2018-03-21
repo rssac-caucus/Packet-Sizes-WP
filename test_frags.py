@@ -50,7 +50,7 @@ def sniffer(ipv6, port, timeout=2):
         logging.error('{}: Timeout'.format(ipv6))
         return
     pkt = pkt[-1]
-    # Check if we have recived an packet with an IPv6 frag header
+    # Check if we have received a packet with an IPv6 frag header
     if pkt.haslayer(IPv6ExtHdrFragment):
         print '{}: is fragmenting'.format(ipv6)
     # check if the TC bit is set
@@ -65,7 +65,7 @@ def test_server(server, mtu=1280, timeout=2):
     logging.debug('{}: sending ICMPv6 PTB with MTU = {}'.format(server, mtu))
     ipv6  = IPv6(dst=server)
     # Send gratuitous ICMPv6 PTB
-    # in theory we should send a get a big response before sending ICMPv6 PTB
+    # in theory we should wait until we receive a big response before sending ICMPv6 PTB
     # however testing seems to indicate that we can just send it gratuitously
     send(ipv6 / ICMPv6PacketTooBig(mtu=mtu), verbose=False)
     # create DNS Questions '. IN ANY'
@@ -86,8 +86,8 @@ def main():
     for server in args.servers:
         test_server(server, args.mtu, args.timeout)
         # We only use threads to ensure the sniffer is running
-        # when we send the query.  to many sniffers running simultaniously
-        # is likley bad so we sleep utill the sniffer times out
+        # when we send the query.  Too many sniffers running simultaniously
+        # is likley bad so we sleep until the sniffer times out
         sleep(args.timeout)
 
 
