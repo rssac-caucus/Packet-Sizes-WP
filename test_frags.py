@@ -55,7 +55,7 @@ def sniffer(ipv6, port, timeout=2):
         print '{}: is fragmenting'.format(ipv6)
     # check if the TC bit is set
     elif pkt.haslayer(DNS) and pkt[DNS].tc:
-        print '{}: is sending truncated'.format(ipv6)
+        print '{}: is truncating'.format(ipv6)
     else:
         logging.error('{}: something went wrong'.format(ipv6))
 
