@@ -31,8 +31,11 @@ def get_args():
 
 
 def stop_filter(pkt, port):
-    # This stop filter adds filtering for our initial src port
-    if pkt.haslayer(UDP):
+    '''This stop filter adds filtering for our initial src port'''
+    if pkt.haslayer(UDP) and pkt.haslayer(IPv6ExtHdrFragment):
+        # if we have frags we want to keep collecting untill we have the last frag
+        return (pkt[UDP].dport == port and pkt[IPv6ExtHdrFragment].m == 0)
+    elif pkt.haslayer(UDP):
         return (pkt[UDP].dport == port)
     return False
 
@@ -49,12 +52,11 @@ def sniffer(ipv6, port, timeout=2):
     if not pkt:
         logging.error('{}: Timeout'.format(ipv6))
         return
-    pkt = pkt[-1]
-    # Check if we have recived an packet with an IPv6 frag header
-    if pkt.haslayer(IPv6ExtHdrFragment):
-        print '{}: is fragmenting'.format(ipv6)
-    # check if the TC bit is set
-    elif pkt.haslayer(DNS) and pkt[DNS].tc:
+    # Check if last packet to see if its a frag
+    if pkt[-1].haslayer(IPv6ExtHdrFragment):
+        print '{}: is fragmenting ({})'.format(ipv6, len(pkt))
+    # if not check if the TC bit is set
+    elif pkt[-1].haslayer(DNS) and pkt[-1][DNS].tc:
         print '{}: is truncating'.format(ipv6)
     else:
         logging.error('{}: something went wrong'.format(ipv6))
@@ -64,13 +66,20 @@ def test_server(server, mtu=1280, timeout=2):
     sport = randint(1024, 65536)
     logging.debug('{}: sending ICMPv6 PTB with MTU = {}'.format(server, mtu))
     ipv6  = IPv6(dst=server)
-    # Send gratuitous ICMPv6 PTB
-    # in theory we should send a get a big response before sending ICMPv6 PTB
-    # however testing seems to indicate that we can just send it gratuitously
-    send(ipv6 / ICMPv6PacketTooBig(mtu=mtu), verbose=False)
     # create DNS Questions '. IN ANY'
     packet = ipv6 / UDP(sport=sport) / DNS(
             qd=DNSQR(qname='.', qtype='ALL'), ar=DNSRROPT(rclass=4096))
+    # trying to send a packet and copy the data back to the icmpv6 response PTB
+    # is a bit of a pain so we ig nore that, ilicit a large response and just send
+    # an icmpv6 ptb packet without a payload.  So far works and tbh im not sure
+    # if we even need to send the frist packet
+    send(packet, verbose=False)
+    # sleep so this response comes in before the listener starts
+    sleep(0.3)
+    # Send gratuitous ICMPv6 PTB.
+    # in theory we should send a get a big response before sending ICMPv6 PTB
+    # however testing seems to indicate that we can just send it gratuitously
+    send(ipv6 / ICMPv6PacketTooBig(mtu=mtu), verbose=False)
     # set up packet sniffer
     s = Process(target=sniffer, args=(server, sport))
     s.start()
