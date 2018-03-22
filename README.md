@@ -19,4 +19,4 @@ ERROR:root:2001:500:12::d0d: Timeout
 ```
 
 
-this work is based on the C and perl scripts avalible at https://github.com/gih900/icmpv6
+this work is based on the C and perl scripts available at https://github.com/gih900/icmpv6

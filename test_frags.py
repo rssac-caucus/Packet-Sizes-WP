@@ -66,6 +66,10 @@ def test_server(server, mtu=1280, timeout=2):
     sport = randint(1024, 65536)
     logging.debug('{}: sending ICMPv6 PTB with MTU = {}'.format(server, mtu))
     ipv6  = IPv6(dst=server)
+    # Send gratuitous ICMPv6 PTB
+    # in theory we should wait until we receive a big response before sending ICMPv6 PTB
+    # however testing seems to indicate that we can just send it gratuitously
+    send(ipv6 / ICMPv6PacketTooBig(mtu=mtu), verbose=False)
     # create DNS Questions '. IN ANY'
     packet = ipv6 / UDP(sport=sport) / DNS(
             qd=DNSQR(qname='.', qtype='ALL'), ar=DNSRROPT(rclass=4096))
@@ -95,8 +99,8 @@ def main():
     for server in args.servers:
         test_server(server, args.mtu, args.timeout)
         # We only use threads to ensure the sniffer is running
-        # when we send the query.  to many sniffers running simultaniously
-        # is likley bad so we sleep utill the sniffer times out
+        # when we send the query.  Too many sniffers running simultaniously
+        # is likley bad so we sleep until the sniffer times out
         sleep(args.timeout)
 
 
