@@ -63,6 +63,8 @@ def sniffer(ipv6, port, timeout=2):
     # if not check if the TC bit is set
     elif pkt[-1].haslayer(DNS) and pkt[-1][DNS].tc:
         print '{}: is truncating'.format(ipv6)
+    elif pkt[-1].haslayer(DNS):
+        print '{}: Recived Answer'.format(ipv6)
     else:
         logging.error('{}: something went wrong'.format(ipv6))
 
