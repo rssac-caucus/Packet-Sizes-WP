@@ -18,7 +18,7 @@ ERROR:root:2001:500:12::d0d: Timeout
 2001:dc3::35: 3 Fragments (1240/1240/689)
 ```
 
-The following tests a query which produces a responses of 1270 bytes
+The following tests a query which produces a responses of ~1270 bytes
 ```bash
 root@ubuntu:~/git/RSSAC-Caucus-Packet-Sizes-WP# ./test_frags.py -Q aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa. $(for i in {a..m}; do dig +short aaaa ${i}.root-servers.net ; done)
 2001:503:ba3e::2:30: is truncating
