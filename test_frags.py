@@ -64,19 +64,16 @@ def sniffer(ipv6, port, timeout=2):
 
 def test_server(server, mtu=1280, timeout=2):
     sport = randint(1024, 65536)
-    logging.debug('{}: sending ICMPv6 PTB with MTU = {}'.format(server, mtu))
     ipv6  = IPv6(dst=server)
-    # First send a small question so we can create a belivable PTB
+    # First send a small question so we can create a believable PTB
     # create DNS Questions '. IN NS'
     packet = ipv6 / UDP(sport=sport) / DNS(
             qd=DNSQR(qname='.', qtype='NS'), ar=DNSRROPT(rclass=4096))
+    logging.debug('{}: generate some DNS traffic'.format(server, mtu))
     ans = sr1(packet, verbose=False)
     # Send ICMPv6 PTB message with geniune data
+    logging.debug('{}: sending ICMPv6 PTB with MTU = {}'.format(server, mtu))
     send(ipv6 / ICMPv6PacketTooBig(mtu=mtu) / ans.original[:512], verbose=False)
-    # create DNS Questions '. IN ANY'
-    packet = ipv6 / UDP(sport=sport) / DNS(
-            qd=DNSQR(qname='.', qtype='ALL'), ar=DNSRROPT(rclass=4096))
-    send(packet)
     # sleep a bit to make sure that the sniffer is up
     sleep(0.3)
     # set up packet sniffer
@@ -84,6 +81,10 @@ def test_server(server, mtu=1280, timeout=2):
     s.start()
     # sleep a bit just to make sure the listener is started
     sleep(0.1)
+    # create DNS Questions '. IN ANY'
+    packet = ipv6 / UDP(sport=sport) / DNS(
+            qd=DNSQR(qname='.', qtype='ALL'), ar=DNSRROPT(rclass=4096))
+    send(packet)
     # send DNS query
     send(packet, verbose=False)
 
