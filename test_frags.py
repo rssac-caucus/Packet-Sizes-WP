@@ -54,7 +54,11 @@ def sniffer(ipv6, port, timeout=2):
         return
     # Check if last packet to see if its a frag
     if pkt[-1].haslayer(IPv6ExtHdrFragment):
-        print '{}: is fragmenting ({})'.format(ipv6, len(pkt))
+        frag_str = ''
+        for p in pkt:
+            frag_str += '{}/'.format(p[IPv6].plen)
+
+        print '{}: {} Fragments ({})'.format(ipv6, len(pkt), frag_str[:-1])
     # if not check if the TC bit is set
     elif pkt[-1].haslayer(DNS) and pkt[-1][DNS].tc:
         print '{}: is truncating'.format(ipv6)
@@ -74,8 +78,6 @@ def test_server(server, mtu=1280, timeout=2):
     # Send ICMPv6 PTB message with geniune data
     logging.debug('{}: sending ICMPv6 PTB with MTU = {}'.format(server, mtu))
     send(ipv6 / ICMPv6PacketTooBig(mtu=mtu) / ans.original[:512], verbose=False)
-    # sleep a bit to make sure that the sniffer is up
-    sleep(0.3)
     # set up packet sniffer
     s = Process(target=sniffer, args=(server, sport))
     s.start()
@@ -84,7 +86,6 @@ def test_server(server, mtu=1280, timeout=2):
     # create DNS Questions '. IN ANY'
     packet = ipv6 / UDP(sport=sport) / DNS(
             qd=DNSQR(qname='.', qtype='ALL'), ar=DNSRROPT(rclass=4096))
-    send(packet)
     # send DNS query
     send(packet, verbose=False)
 
