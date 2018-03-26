@@ -5,7 +5,7 @@ from random import randint
 from time import sleep
 from multiprocessing import Process
 from scapy.all import IPv6, ICMPv6PacketTooBig, UDP, IPv6ExtHdrFragment, \
-        sniff, send, DNS, DNSQR, DNSRROPT
+        sniff, send, DNS, DNSQR, DNSRROPT, sr1
 from argparse import ArgumentParser
 
 
@@ -66,24 +66,19 @@ def test_server(server, mtu=1280, timeout=2):
     sport = randint(1024, 65536)
     logging.debug('{}: sending ICMPv6 PTB with MTU = {}'.format(server, mtu))
     ipv6  = IPv6(dst=server)
-    # Send gratuitous ICMPv6 PTB
-    # in theory we should wait until we receive a big response before sending ICMPv6 PTB
-    # however testing seems to indicate that we can just send it gratuitously
-    send(ipv6 / ICMPv6PacketTooBig(mtu=mtu), verbose=False)
+    # First send a small question so we can create a belivable PTB
+    # create DNS Questions '. IN NS'
+    packet = ipv6 / UDP(sport=sport) / DNS(
+            qd=DNSQR(qname='.', qtype='NS'), ar=DNSRROPT(rclass=4096))
+    ans = sr1(packet, verbose=False)
+    # Send ICMPv6 PTB message with geniune data
+    send(ipv6 / ICMPv6PacketTooBig(mtu=mtu) / ans.original[:512], verbose=False)
     # create DNS Questions '. IN ANY'
     packet = ipv6 / UDP(sport=sport) / DNS(
             qd=DNSQR(qname='.', qtype='ALL'), ar=DNSRROPT(rclass=4096))
-    # trying to send a packet and copy the data back to the icmpv6 response PTB
-    # is a bit of a pain so we ig nore that, ilicit a large response and just send
-    # an icmpv6 ptb packet without a payload.  So far works and tbh im not sure
-    # if we even need to send the frist packet
-    send(packet, verbose=False)
-    # sleep so this response comes in before the listener starts
+    send(packet)
+    # sleep a bit to make sure that the sniffer is up
     sleep(0.3)
-    # Send gratuitous ICMPv6 PTB.
-    # in theory we should send a get a big response before sending ICMPv6 PTB
-    # however testing seems to indicate that we can just send it gratuitously
-    send(ipv6 / ICMPv6PacketTooBig(mtu=mtu), verbose=False)
     # set up packet sniffer
     s = Process(target=sniffer, args=(server, sport))
     s.start()
