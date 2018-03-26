@@ -25,6 +25,7 @@ def get_args():
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('-T', '--timeout', default=2, type=int)
     parser.add_argument('-M', '--mtu', default=1280, type=int)
+    parser.add_argument('-Q', '--qname', default='.', type=str)
     parser.add_argument('-v', '--verbose', action='count')
     parser.add_argument('servers', nargs='+')
     return parser.parse_args()
@@ -66,7 +67,7 @@ def sniffer(ipv6, port, timeout=2):
         logging.error('{}: something went wrong'.format(ipv6))
 
 
-def test_server(server, mtu=1280, timeout=2):
+def test_server(server, qname='.', mtu=1280, timeout=2):
     sport = randint(1024, 65536)
     ipv6  = IPv6(dst=server)
     # First send a small question so we can create a believable PTB
@@ -85,7 +86,7 @@ def test_server(server, mtu=1280, timeout=2):
     sleep(0.1)
     # create DNS Questions '. IN ANY'
     packet = ipv6 / UDP(sport=sport) / DNS(
-            qd=DNSQR(qname='.', qtype='ALL'), ar=DNSRROPT(rclass=4096))
+            qd=DNSQR(qname=qname, qtype='ALL'), ar=DNSRROPT(rclass=4096))
     # send DNS query
     send(packet, verbose=False)
 
@@ -94,7 +95,7 @@ def main():
     args = get_args()
     set_log_level(args.verbose)
     for server in args.servers:
-        test_server(server, args.mtu, args.timeout)
+        test_server(server, args.qname, args.mtu, args.timeout)
         # We only use threads to ensure the sniffer is running
         # when we send the query.  Too many sniffers running simultaniously
         # is likley bad so we sleep until the sniffer times out
