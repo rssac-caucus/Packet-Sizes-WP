@@ -58,7 +58,6 @@ def sniffer(ipv6, port, timeout=2):
         frag_str = ''
         for p in pkt:
             frag_str += '{}/'.format(p[IPv6].plen)
-
         print '{}: {} Fragments ({})'.format(ipv6, len(pkt), frag_str[:-1])
     # if not check if the TC bit is set
     elif pkt[-1].haslayer(DNS) and pkt[-1][DNS].tc:
@@ -72,18 +71,15 @@ def sniffer(ipv6, port, timeout=2):
 def test_server(server, qname='.', mtu=1280, timeout=2):
     sport = randint(1024, 65536)
     ipv6  = IPv6(dst=server)
-    ptb_ipv6 = IPv6(dst=ipv6.src, src=ipv6.dst) / UDP(sport=53, dport=sport)
-    ptb_ipv6.add_payload('a' * 400)
     # First send a small question so we can create a believable PTB
     # create DNS Questions '. IN NS'
-    # packet = ipv6 / UDP(sport=sport) / DNS(
-    #        qd=DNSQR(qname='.', qtype='NS'), ar=DNSRROPT(rclass=4096))
-    # logging.debug('{}: generate some DNS traffic'.format(server, mtu))
-    # ans = sr1(packet, verbose=False)
+    packet = ipv6 / UDP(sport=sport) / DNS(
+           qd=DNSQR(qname='.', qtype='NS'), ar=DNSRROPT(rclass=4096))
+    logging.debug('{}: generate some DNS traffic'.format(server, mtu))
+    ans = sr1(packet, verbose=False)
     # Send ICMPv6 PTB message with geniune data
     logging.debug('{}: sending ICMPv6 PTB with MTU = {}'.format(server, mtu))
-    # send(ipv6 / ICMPv6PacketTooBig(mtu=mtu) / ans.original[:512], verbose=False)
-    send(ipv6 / ICMPv6PacketTooBig(mtu=mtu) / ptb_ipv6.build(), verbose=False)
+    send(ipv6 / ICMPv6PacketTooBig(mtu=mtu) / ans.original[:512], verbose=False)
     # set up packet sniffer
     s = Process(target=sniffer, args=(server, sport))
     s.start()
