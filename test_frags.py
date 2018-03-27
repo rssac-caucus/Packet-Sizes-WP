@@ -73,8 +73,7 @@ def test_server(server, qname='.', mtu=1280, timeout=2):
     ipv6  = IPv6(dst=server)
     # First send a small question so we can create a believable PTB
     # create DNS Questions '. IN NS'
-    packet = ipv6 / UDP(sport=sport) / DNS(
-           qd=DNSQR(qname='.', qtype='NS'), ar=DNSRROPT(rclass=4096))
+    packet = ipv6 / UDP(sport=sport) / DNS(qd=DNSQR(qname='.', qtype='SOA'))
     logging.debug('{}: generate some DNS traffic'.format(server, mtu))
     ans = sr1(packet, verbose=False)
     # Send ICMPv6 PTB message with geniune data
