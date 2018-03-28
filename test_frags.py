@@ -56,15 +56,17 @@ def sniffer(ipv6, port, timeout=2):
     # Check if last packet to see if its a frag
     if pkt[-1].haslayer(IPv6ExtHdrFragment):
         frag_str = ''
+        cnt = 0
         for p in pkt:
             if p.haslayer(UDP):
                 frag_str += '{}/'.format(p[IPv6].plen)
-        print('{}: {} Fragments ({})'.format(ipv6, len(pkt), frag_str[:-1]))
+                cnt += 1
+        print('{}: Is Fragmenting ({} -> {})'.format(ipv6, cnt, frag_str[:-1]))
     # if not check if the TC bit is set
     elif pkt[-1].haslayer(DNS) and pkt[-1][DNS].tc:
-        print('{}: is truncating'.format(ipv6))
+        print('{}: Is truncating'.format(ipv6))
     elif pkt[-1].haslayer(DNS):
-        print('{}: Recived Answer ({})'.format(ipv6, pkt[-1][IPv6].plen))
+        print('{}: Is Answering Normally ({})'.format(ipv6, pkt[-1][IPv6].plen))
     else:
         logging.error('{}: something went wrong'.format(ipv6))
 
