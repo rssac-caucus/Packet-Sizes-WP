@@ -58,34 +58,38 @@ def sniffer(ipv6, port, timeout=2):
         frag_str = ''
         for p in pkt:
             frag_str += '{}/'.format(p[IPv6].plen)
-        print '{}: {} Fragments ({})'.format(ipv6, len(pkt), frag_str[:-1])
+        logging.info('{}: {} Fragments ({})'.format(ipv6, len(pkt), frag_str[:-1]))
     # if not check if the TC bit is set
     elif pkt[-1].haslayer(DNS) and pkt[-1][DNS].tc:
-        print '{}: is truncating'.format(ipv6)
+        logging.info('{}: is truncating'.format(ipv6))
     elif pkt[-1].haslayer(DNS):
-        print '{}: Recived Answer ({})'.format(ipv6, pkt[-1][IPv6].plen)
+        logging.info('{}: Recived Answer ({})'.format(ipv6, pkt[-1][IPv6].plen))
     else:
         logging.error('{}: something went wrong'.format(ipv6))
 
 
-def test_server(server, qname='.', mtu=1280, timeout=2):
-    sport = randint(1024, 65536)
+def send_ptb(server, mtu=1280):
     ipv6  = IPv6(dst=server)
     # First send a small question so we can create a believable PTB
     # create DNS Questions '. IN NS'
-    packet = ipv6 / UDP(sport=sport) / DNS(qd=DNSQR(qname='.', qtype='SOA'))
+    packet = ipv6 / UDP() / DNS(qd=DNSQR(qname='.', qtype='SOA'))
     logging.debug('{}: generate some DNS traffic'.format(server, mtu))
     ans = sr1(packet, verbose=False)
     # Send ICMPv6 PTB message with geniune data
     logging.debug('{}: sending ICMPv6 PTB with MTU = {}'.format(server, mtu))
     send(ipv6 / ICMPv6PacketTooBig(mtu=mtu) / ans.original[:512], verbose=False)
+
+
+def test_server(server, qname='.', timeout=2, send_ptb=True):
+    sport = randint(1024, 65536)
+    ipv6  = IPv6(dst=server)
     # set up packet sniffer
     s = Process(target=sniffer, args=(server, sport))
     s.start()
     # sleep a bit just to make sure the listener is started
     sleep(0.1)
     # create DNS Questions '. IN ANY'
-    packet = ipv6 / UDP(sport=sport) / DNS(
+    packet = ipv6 / UDP(dport=53, sport=sport) / DNS(
             qd=DNSQR(qname=qname, qtype='ALL'), ar=DNSRROPT(rclass=4096))
     # send DNS query
     send(packet, verbose=False)
@@ -95,10 +99,18 @@ def main():
     args = get_args()
     set_log_level(args.verbose)
     for server in args.servers:
-        test_server(server, args.qname, args.mtu, args.timeout)
-        # We only use threads to ensure the sniffer is running
-        # when we send the query.  Too many sniffers running simultaniously
-        # is likley bad so we sleep until the sniffer times out
+        # Collect stats before the PTB
+        logging.info('{}: collect stats pre ICMPv6 PTB'.format(server))
+        test_server(server, args.qname, args.timeout, False)
+        # sleep until the sniffer times out
+        sleep(args.timeout)
+        # send PTB
+        logging.info('{}: send ICMPv6 PTB'.format(server))
+        send_ptb(server)
+        # Collect stats after the PTB
+        logging.info('{}: collect stats post ICMPv6 PTB'.format(server))
+        test_server(server, args.qname, args.timeout)
+        # sleep until the sniffer times out
         sleep(args.timeout)
 
 
