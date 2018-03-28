@@ -64,7 +64,10 @@ def sniffer(ipv6, port, timeout=2):
         print('{}: Is Fragmenting ({} -> {})'.format(ipv6, cnt, frag_str[:-1]))
     # if not check if the TC bit is set
     elif pkt[-1].haslayer(DNS) and pkt[-1][DNS].tc:
-        print('{}: Is truncating'.format(ipv6))
+        if pkt[-1].haslayer(DNSRROPT):
+            print('{}: Is truncating (edns: {})'.format(ipv6, pkt[-1][DNSRROPT].rclass))
+        else:
+            print('{}: Is truncating'.format(ipv6))
     elif pkt[-1].haslayer(DNS):
         print('{}: Is Answering Normally ({})'.format(ipv6, pkt[-1][IPv6].plen))
     else:
