@@ -58,12 +58,12 @@ def sniffer(ipv6, port, timeout=2):
         frag_str = ''
         for p in pkt:
             frag_str += '{}/'.format(p[IPv6].plen)
-        logging.info('{}: {} Fragments ({})'.format(ipv6, len(pkt), frag_str[:-1]))
+        print('{}: {} Fragments ({})'.format(ipv6, len(pkt), frag_str[:-1]))
     # if not check if the TC bit is set
     elif pkt[-1].haslayer(DNS) and pkt[-1][DNS].tc:
-        logging.info('{}: is truncating'.format(ipv6))
+        print('{}: is truncating'.format(ipv6))
     elif pkt[-1].haslayer(DNS):
-        logging.info('{}: Recived Answer ({})'.format(ipv6, pkt[-1][IPv6].plen))
+        print('{}: Recived Answer ({})'.format(ipv6, pkt[-1][IPv6].plen))
     else:
         logging.error('{}: something went wrong'.format(ipv6))
 
