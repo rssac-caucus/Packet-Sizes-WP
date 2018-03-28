@@ -57,7 +57,7 @@ def sniffer(ipv6, port, timeout=2):
     if pkt[-1].haslayer(IPv6ExtHdrFragment):
         frag_str = ''
         for p in pkt:
-            if p.haslayer(UDP) and pkt[UDP].dport == port:
+            if p.haslayer(UDP) and p[UDP].dport == port:
                 frag_str += '{}/'.format(p[IPv6].plen)
         print('{}: {} Fragments ({})'.format(ipv6, len(pkt), frag_str[:-1]))
     # if not check if the TC bit is set
