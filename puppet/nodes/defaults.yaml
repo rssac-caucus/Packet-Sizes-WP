@@ -1,0 +1,11 @@
+knot::remotes:
+  lax.xfr.dns.icann.org:
+    address4: 192.0.32.132
+  iad.xfr.dns.icann.org:
+    address4: 192.0.47.132
+knot::zones:
+  '.':
+    masters:
+    - lax.xfr.dns.icann.org
+    - iad.xfr.dns.icann.org
+    zonefile: root
